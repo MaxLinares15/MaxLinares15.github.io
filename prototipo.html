@@ -1,0 +1,454 @@
+<!-- /index.html -->
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prototipo Antifraude (Solo HTML + CSS)</title>
+  <style>
+    :root{
+      --bg: #0f1220;
+      --panel: #171a2b;
+      --muted: #8b92b7;
+      --text: #e8ebff;
+      --accent: #6a7dff;
+      --accent-2: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --ok: #10b981;
+      --card: #1b2040;
+      --border: #2a2f57;
+      --chip: #22264b;
+      --white: #ffffff;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 20% -10%, #1d2144 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    a{color:inherit; text-decoration:none}
+    .app{
+      display:grid; grid-template-rows: 64px 1fr; height:100vh; overflow:hidden;
+    }
+    header{
+      display:flex; align-items:center; gap:16px; padding:0 20px; border-bottom:1px solid var(--border); background:rgba(15,18,32,.6); backdrop-filter: blur(8px);
+    }
+    .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.3px}
+    .logo{width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg, var(--accent), #9b6aff); display:grid; place-items:center; box-shadow: var(--shadow)}
+    .logo span{font-size:18px}
+    .spacer{flex:1}
+    .user{
+      display:flex; align-items:center; gap:12px; color:var(--muted);
+    }
+    .user .avatar{width:28px;height:28px;border-radius:50%; background:#2a2f57}
+
+    .layout{
+      display:grid; grid-template-columns: 260px 1fr; height:calc(100vh - 64px);
+    }
+    nav{
+      border-right:1px solid var(--border); background:linear-gradient(180deg, #141733, #11142b);
+      padding:16px; overflow:auto;
+    }
+    .nav-group{margin-bottom:18px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
+    .menu{
+      display:grid; gap:6px; margin-bottom:24px;
+    }
+    .menu a{
+      padding:10px 12px; border-radius:12px; color:var(--text); display:flex; align-items:center; gap:10px; border:1px solid transparent;
+    }
+    .menu a:hover{background:var(--chip); border-color:var(--border)}
+    .menu a.active{background:var(--accent); color:var(--white)}
+
+    main{overflow:auto; padding:24px;}
+    section{display:none}
+    section:target{display:block}
+    /* Vista por defecto: login */
+    body:not(:has(section:target)) #login{display:grid}
+
+    /* Utilidades */
+    .grid{display:grid; gap:16px}
+    .grid.cols-3{grid-template-columns: repeat(3, minmax(0,1fr))}
+    .grid.cols-4{grid-template-columns: repeat(4, minmax(0,1fr))}
+    .grid.cols-2{grid-template-columns: repeat(2, minmax(0,1fr))}
+    @media (max-width: 1100px){
+      .layout{grid-template-columns: 80px 1fr}
+      nav .label{display:none}
+      .grid.cols-4{grid-template-columns: repeat(2, minmax(0,1fr))}
+      .grid.cols-3{grid-template-columns: repeat(2, minmax(0,1fr))}
+    }
+    @media (max-width: 760px){
+      .layout{grid-template-columns: 1fr}
+      nav{display:none}
+      .grid.cols-3,.grid.cols-4,.grid.cols-2{grid-template-columns: 1fr}
+      main{padding:16px}
+    }
+
+    .card{
+      background:linear-gradient(180deg, #1b1f3f, #171a32); border:1px solid var(--border); border-radius:var(--radius); box-shadow: var(--shadow);
+    }
+    .card.pad{padding:16px}
+    .subtle{color:var(--muted)}
+    .badge{font-size:12px; padding:4px 8px; border-radius:999px; background:var(--chip); border:1px solid var(--border)}
+    .badge.ok{background:#0e2d25; color:#6cf5c7; border-color:#124a3e}
+    .badge.warn{background:#2c2304; color:#ffd27a; border-color:#4a3906}
+    .badge.danger{background:#3a0e0e; color:#ffb4b4; border-color:#581212}
+
+    /* LOGIN */
+    #login{
+      height:calc(100vh - 64px); place-items:center; grid-template-columns: 1fr; background: radial-gradient(1000px 600px at 80% -10%, #1b1e3b 0%, transparent 60%);
+    }
+    .login-wrap{display:grid; gap:16px; width:min(460px, 92vw)}
+    .login-card{display:grid; gap:16px}
+    .login-head{display:flex; flex-direction:column; gap:6px}
+    .field{display:grid; gap:6px}
+    .input{padding:12px 14px; border-radius:12px; background:#12142a; border:1px solid var(--border); color:var(--text)}
+    .row{display:flex; align-items:center; justify-content:space-between}
+    .btn{display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 14px; border-radius:12px; border:1px solid transparent; cursor:pointer}
+    .btn.primary{background:var(--accent); color:#fff}
+    .btn.ghost{background:transparent; color:var(--text); border-color:var(--border)}
+
+    /* DASHBOARD */
+    .kpi{display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:14px; border:1px solid var(--border); background:linear-gradient(180deg, #1b2040 0%, #171a32 100%)}
+    .kpi h3{margin:0; font-size:13px; color:var(--muted)}
+    .kpi b{font-size:22px}
+    .mini-chart{height:52px; border-radius:10px; background:repeating-linear-gradient(90deg, #202552, #202552 8px, #1a1e44 8px, #1a1e44 16px)}
+    .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+
+    /* TABLAS */
+    table{width:100%; border-collapse:separate; border-spacing:0}
+    th,td{padding:12px 10px; text-align:left}
+    thead th{position:sticky; top:0; background:#141737; z-index:1; color:var(--muted); font-weight:600}
+    tbody tr{border-top:1px solid var(--border)}
+    tbody tr:hover{background:#181c3b}
+    .status{padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border); display:inline-block}
+    .status.ok{background:#0f2d1f; color:#86efac; border-color:#14532d}
+    .status.riesgo{background:#2f1a09; color:#fbbf24; border-color:#7c3d0c}
+    .status.fraude{background:#3a0f15; color:#fca5a5; border-color:#7f1d1d}
+
+    /* FILTROS */
+    .filters{display:grid; gap:10px; grid-template-columns: repeat(6, minmax(0,1fr))}
+    .filters .input{width:100%}
+    @media (max-width:1100px){.filters{grid-template-columns: repeat(3, 1fr)}}
+    @media (max-width:760px){.filters{grid-template-columns: 1fr}}
+
+    /* PLACEHOLDERS VISUALES */
+    .chart{height:260px; border-radius:14px; border:1px dashed #2f3566; background:linear-gradient(135deg, #15183a, #121430)}
+    .map{height:260px; border-radius:14px; border:1px dashed #2f3566; background:
+      radial-gradient(circle at 30% 40%, rgba(106,125,255,.12), transparent 30%),
+      radial-gradient(circle at 70% 60%, rgba(34,197,94,.12), transparent 30%),
+      linear-gradient(135deg, #15183a, #121430)}
+    .toast{padding:12px 14px; border-radius:12px; background:#24162c; border:1px solid #4b1c5c; color:#f0c6ff}
+
+    /* ENCABEZADOS */
+    h1{margin:0 0 10px 0}
+    h2{margin:0}
+
+    /* Mostrar sección activa en menú sin JS */
+    :target ~ .layout nav a[href="#dashboard"],
+    #dashboard:target ~ .layout nav a[href="#dashboard"],
+    #transacciones:target ~ .layout nav a[href="#transacciones"],
+    #detalle:target ~ .layout nav a[href="#detalle"],
+    #alertas:target ~ .layout nav a[href="#alertas"],
+    #reportes:target ~ .layout nav a[href="#reportes"],
+    #configuracion:target ~ .layout nav a[href="#configuracion"]{ background:var(--accent); color:#fff }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand"><div class="logo" aria-hidden="true"><span>🛡️</span></div> Antifraude</div>
+      <div class="spacer"></div>
+      <div class="user"><span class="subtle">v0 • Prototipo visual</span><div class="avatar" aria-hidden="true"></div></div>
+    </header>
+
+    <!-- LOGIN -->
+    <section id="login">
+      <div class="login-wrap">
+        <div class="card pad login-card">
+          <div class="login-head">
+            <h1>Acceso seguro</h1>
+            <p class="subtle">Ingresa con tu correo o usuario. 2FA disponible.</p>
+          </div>
+          <label class="field">
+            <span>Correo o usuario</span>
+            <input class="input" type="email" placeholder="usuario@empresa.com" />
+          </label>
+          <label class="field">
+            <span>Contraseña</span>
+            <input class="input" type="password" placeholder="••••••••" />
+          </label>
+          <div class="row">
+            <a class="subtle" href="#">¿Olvidaste tu contraseña?</a>
+            <span class="badge warn">Bloqueo temporal tras 5 intentos</span>
+          </div>
+          <div class="row">
+            <a class="btn ghost" href="#">Activar 2FA</a>
+            <a class="btn primary" href="#dashboard">Ingresar</a>
+          </div>
+        </div>
+        <div class="toast">ℹ️ Este es un prototipo visual (no funcional) con HTML + CSS.</div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <nav>
+        <div class="nav-group">Menú</div>
+        <div class="menu">
+          <a href="#dashboard"><span></span><span class="label">Panel de control</span></a>
+          <a href="#transacciones"><span></span><span class="label">Transacciones</span></a>
+          <a href="#detalle"><span></span><span class="label">Detalle de transacción</span></a>
+          <a href="#alertas"><span></span><span class="label">Alertas de fraude</span></a>
+          <a href="#reportes"><span></span><span class="label">Reportes</span></a>
+          <a href="#configuracion"><span></span><span class="label">Configuración</span></a>
+          <a href="#login"><span></span><span class="label">Cerrar sesión</span></a>
+        </div>
+        <div class="subtle" style="font-size:12px">Solo visual • Anclas CSS</div>
+      </nav>
+
+      <main>
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="grid">
+          <h2>Panel de Control</h2>
+          <div class="grid cols-3">
+            <div class="kpi card">
+              <div><h3>Total de transacciones (24h)</h3><b>128,540</b></div>
+              <span class="badge ok">+3.2%</span>
+            </div>
+            <div class="kpi card">
+              <div><h3>Porcentaje de fraudes</h3><b>0.42%</b></div>
+              <span class="badge warn">·0.05 pp</span>
+            </div>
+            <div class="kpi card">
+              <div><h3>Alertas abiertas</h3><b>37</b></div>
+              <span class="badge danger">7 críticas</span>
+            </div>
+          </div>
+          <div class="grid cols-2">
+            <div class="card pad">
+              <div class="panel-head"><b>Línea de tiempo de transacciones</b><span class="subtle">Últimas 24h</span></div>
+              <div class="chart" aria-label="placeholder gráfico de línea"></div>
+            </div>
+            <div class="card pad">
+              <div class="panel-head"><b>Mapa geográfico de operaciones</b><span class="subtle">Mundo</span></div>
+              <div class="map" aria-label="placeholder mapa"></div>
+            </div>
+          </div>
+          <div class="card pad">
+            <div class="panel-head"><b>Notificaciones en tiempo real</b><span class="badge danger">Críticas</span></div>
+            <div class="grid">
+              <div class="toast">🚨 Alta probabilidad de fraude detectada en TX-921037 (95%)</div>
+              <div class="toast" style="background:#1a2b1f; border-color:#1f4d31; color:#c7ffdf">✅ IP de cliente validada y lista blanca actualizada</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TRANSACCIONES -->
+        <section id="transacciones" class="grid">
+          <h2>Transacciones</h2>
+          <div class="card pad">
+            <div class="panel-head"><b>Filtros avanzados</b><span class="subtle">Cliente, fecha, monto, estado, ubicación, IP</span></div>
+            <div class="filters">
+              <input class="input" placeholder="Cliente" />
+              <input class="input" type="date" />
+              <input class="input" type="date" />
+              <input class="input" placeholder="Monto mínimo" />
+              <select class="input"><option>Estado</option><option>Aprobada</option><option>Rechazada</option><option>En revisión</option></select>
+              <input class="input" placeholder="IP / Ubicación" />
+            </div>
+          </div>
+          <div class="card pad" style="overflow:auto; max-height: 60vh">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>Cliente</th><th>Fecha</th><th>Monto</th><th>Estado</th><th>Riesgo</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>TX-921037</td><td>María Pérez</td><td>2025-08-14 09:21</td><td>$ 1,280.00</td>
+                  <td><span class="status fraude">Sospechosa</span></td><td>95%</td>
+                  <td><a class="btn ghost" href="#detalle">Ver detalle</a></td>
+                </tr>
+                <tr>
+                  <td>TX-920998</td><td>Juan Silva</td><td>2025-08-14 09:05</td><td>$ 42.50</td>
+                  <td><span class="status ok">Aprobada</span></td><td>3%</td>
+                  <td><a class="btn ghost" href="#detalle">Ver detalle</a></td>
+                </tr>
+                <tr>
+                  <td>TX-920881</td><td>Ana Torres</td><td>2025-08-14 08:51</td><td>$ 520.00</td>
+                  <td><span class="status riesgo">En revisión</span></td><td>62%</td>
+                  <td><a class="btn ghost" href="#detalle">Ver detalle</a></td>
+                </tr>
+                <tr>
+                  <td>TX-920701</td><td>Mario Díaz</td><td>2025-08-14 08:13</td><td>$ 7,245.32</td>
+                  <td><span class="status ok">Aprobada</span></td><td>8%</td>
+                  <td><a class="btn ghost" href="#detalle">Ver detalle</a></td>
+                </tr>
+                <tr>
+                  <td>TX-920611</td><td>Lucía Gómez</td><td>2025-08-14 07:59</td><td>$ 312.00</td>
+                  <td><span class="status riesgo">En revisión</span></td><td>48%</td>
+                  <td><a class="btn ghost" href="#detalle">Ver detalle</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- DETALLE DE TRANSACCIÓN -->
+        <section id="detalle" class="grid">
+          <h2>Detalle de Transacción</h2>
+          <div class="grid cols-3">
+            <div class="card pad">
+              <div class="panel-head"><b>Datos de la transacción</b><span class="badge">TX-921037</span></div>
+              <div class="grid">
+                <div><span class="subtle">Fecha</span><div>2025-08-14 09:21</div></div>
+                <div><span class="subtle">Monto</span><div>$ 1,280.00</div></div>
+                <div><span class="subtle">Medio de pago</span><div>Tarjeta •••• 9042</div></div>
+                <div><span class="subtle">IP</span><div>201.221.88.14</div></div>
+                <div><span class="subtle">Dispositivo</span><div>iPhone 14 · iOS 17</div></div>
+              </div>
+            </div>
+            <div class="card pad">
+              <div class="panel-head"><b>Análisis del modelo IA</b><span class="badge danger">Fraude 95%</span></div>
+              <ul class="subtle" style="margin:0; padding-left:18px; line-height:1.8">
+                <li>Múltiples intentos fallidos previos</li>
+                <li>Distancia geográfica inusual vs. historial</li>
+                <li>Dispositivo no reconocido</li>
+                <li>Transacción por encima de promedio del cliente</li>
+              </ul>
+              <div class="chart" style="height:140px; margin-top:12px" aria-label="placeholder barras"></div>
+            </div>
+            <div class="card pad">
+              <div class="panel-head"><b>Historial del cliente</b><span class="badge">Últimos 6 meses</span></div>
+              <div class="grid">
+                <div class="kpi"><div><h3>Transacciones</h3><b>182</b></div><span class="badge ok">Tasa fraude 0.8%</span></div>
+                <div class="kpi"><div><h3>Alertas previas</h3><b>4</b></div><span class="badge warn">2 relevantes</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="card pad">
+            <div class="panel-head"><b>Acciones del analista</b><span class="subtle">Decisión informada</span></div>
+            <div class="row" style="gap:10px; flex-wrap:wrap">
+              <a class="btn" style="background:#2a3a2f; color:#b7ffcf; border:1px solid #395e48" href="#">Marcar como Falso Positivo</a>
+              <a class="btn" style="background:#4a1f26; color:#ffc8d0; border:1px solid #7a2e3a" href="#">Confirmar Fraude</a>
+              <a class="btn ghost" href="#">Añadir observaciones</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ALERTAS -->
+        <section id="alertas" class="grid">
+          <h2>Alertas de Fraude</h2>
+          <div class="card pad" style="overflow:auto; max-height: 70vh">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID Alerta</th><th>Transacción</th><th>Severidad</th><th>Fecha</th><th>Estado</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>A-77812</td><td>TX-921037</td><td><span class="badge danger">Crítica</span></td><td>2025-08-14 09:22</td><td>Pendiente</td>
+                  <td><div class="row" style="gap:8px"><a class="btn ghost" href="#">Asignar</a><a class="btn ghost" href="#">Cerrar</a></div></td>
+                </tr>
+                <tr>
+                  <td>A-77800</td><td>TX-920881</td><td><span class="badge warn">Alta</span></td><td>2025-08-14 08:54</td><td>En revisión</td>
+                  <td><div class="row" style="gap:8px"><a class="btn ghost" href="#">Asignar</a><a class="btn ghost" href="#">Cerrar</a></div></td>
+                </tr>
+                <tr>
+                  <td>A-77754</td><td>TX-920611</td><td><span class="badge">Media</span></td><td>2025-08-14 08:02</td><td>Revisada</td>
+                  <td><div class="row" style="gap:8px"><a class="btn ghost" href="#">Asignar</a><a class="btn ghost" href="#">Cerrar</a></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- REPORTES -->
+        <section id="reportes" class="grid">
+          <h2>Reportes</h2>
+          <div class="grid cols-2">
+            <div class="card pad">
+              <div class="panel-head"><b>Generación personalizada</b><span class="subtle">Fechas, tipo, clientes, montos</span></div>
+              <div class="grid">
+                <div class="grid cols-2">
+                  <input class="input" type="date" />
+                  <input class="input" type="date" />
+                </div>
+                <select class="input"><option>Tipo de fraude</option><option>Phishing</option><option>Carding</option><option>Robo de identidad</option></select>
+                <input class="input" placeholder="Cliente(s)" />
+                <div class="row" style="gap:10px">
+                  <a class="btn primary" href="#">Generar</a>
+                  <span class="subtle">Exportación: PDF, Excel, CSV</span>
+                </div>
+              </div>
+            </div>
+            <div class="card pad">
+              <div class="panel-head"><b>Visualización</b><span class="subtle">Tendencias y horarios críticos</span></div>
+              <div class="chart" aria-label="placeholder gráfico"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURACIÓN -->
+        <section id="configuracion" class="grid">
+          <h2>Configuración del Sistema</h2>
+          <div class="grid cols-3">
+            <div class="card pad">
+              <div class="panel-head"><b>Gestión de usuarios internos</b><span class="subtle">Crear / editar / eliminar</span></div>
+              <div class="grid">
+                <div class="row" style="gap:8px"><input class="input" placeholder="Buscar usuario" /><a class="btn ghost" href="#">Nuevo</a></div>
+                <div class="card pad" style="background:#15193a">• Ana (Analista) · • Luis (Administrador) · • Sofía (Auditor)</div>
+              </div>
+            </div>
+            <div class="card pad">
+              <div class="panel-head"><b>Roles y permisos</b><span class="subtle">Administrador, Analista, Auditor</span></div>
+              <div class="grid">
+                <div class="badge">RBAC</div>
+                <div class="card pad" style="background:#15193a">Plantillas de permisos predefinidas</div>
+              </div>
+            </div>
+            <div class="card pad">
+              <div class="panel-head"><b>Parámetros del modelo IA</b><span class="subtle">Umbral de detección</span></div>
+              <div class="grid">
+                <div class="row" style="gap:10px; align-items:center">
+                  <span class="subtle">Umbral</span>
+                  <div class="badge warn">0.75</div>
+                  <!-- Por qué: señalamos el control clave aunque no sea funcional -->
+                  <a class="btn ghost" href="#">Ajustar</a>
+                </div>
+                <div class="chart" style="height:120px" aria-label="placeholder curva ROC"></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid cols-2">
+            <div class="card pad">
+              <div class="panel-head"><b>Notificaciones</b><span class="subtle">Correo, SMS, Push</span></div>
+              <div class="grid cols-2">
+                <label class="field"><span>Correo</span><select class="input"><option>Activadas</option><option>Desactivadas</option></select></label>
+                <label class="field"><span>SMS</span><select class="input"><option>Activadas</option><option>Desactivadas</option></select></label>
+                <label class="field"><span>Push</span><select class="input"><option>Activadas</option><option>Desactivadas</option></select></label>
+                <div class="row" style="gap:10px"><a class="btn primary" href="#">Guardar</a><a class="btn ghost" href="#">Restablecer</a></div>
+              </div>
+            </div>
+            <div class="card pad">
+              <div class="panel-head"><b>Seguridad</b><span class="subtle">Políticas y bloqueo</span></div>
+              <ul class="subtle" style="margin:0; padding-left:18px; line-height:1.8">
+                <li>Contraseñas fuertes y rotación trimestral</li>
+                <li>Bloqueo temporal tras varios intentos fallidos</li>
+                <li>2FA obligatorio para administradores</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+</body>
+</html>
